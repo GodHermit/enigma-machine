@@ -9,7 +9,7 @@ Nothing is uploaded: the cipher engine, the language statistics and your text st
 
 ```sh
 yarn install
-yarn dev        # http://localhost:5173
+yarn dev        # http://localhost:5173/enigma-machine/
 ```
 
 ## Screenshots
@@ -229,7 +229,7 @@ See [`scripts/breaker-benchmark.bench.ts`](scripts/breaker-benchmark.bench.ts) f
 
 ### Deployment
 
-`yarn build` produces a static site in `dist/` with relative paths and hash routing, so it works from any static host or subfolder (for example GitHub Pages). The build adds a Content-Security-Policy that only allows scripts and network requests from the site itself.
+`yarn build` produces a static site in `dist/`. Asset URLs start with `/enigma-machine/` (the `base` option in [`vite.config.ts`](vite.config.ts)) and routing uses the URL hash, so no server rewrites are needed. To host it under another path, change `base`.
 
 ---
 

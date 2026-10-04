@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { MODELS } from '../enigma/constants'
 import { encryptText } from '../enigma/machine'
 import { validateSettings } from '../enigma/settings'
-import { defaultBreakerConfig, estimateWork, KEYS_PER_SECOND_PER_WORKER, validateBreakerConfig } from './config'
+import { defaultBreakerConfig, estimateWork, KEYS_PER_SECOND_PER_WORKER, validateBreakerConfig, WASM_KEYS_PER_SECOND_PER_WORKER } from './config'
 import { describeKey, sampleChallenge } from './samples'
 import { indexOfCoincidence } from './text'
 
@@ -51,12 +51,19 @@ describe('estimateWork', () => {
     const base = { ...defaultBreakerConfig('I'), ciphertext: cipher }
     const one = estimateWork({ ...base, workers: 1 }).seconds
     const eight = estimateWork({ ...base, workers: 8 }).seconds
-    // Phase 1 alone: keys / throughput.
-    expect(one).toBeGreaterThan((60 * 17576) / KEYS_PER_SECOND_PER_WORKER)
+    // Phase 1 alone: keys / throughput (the default engine is WebAssembly SIMD).
+    expect(one).toBeGreaterThan((60 * 17576) / WASM_KEYS_PER_SECOND_PER_WORKER)
+    const js = estimateWork({ ...base, workers: 1, cpuEngine: 'js' }).seconds
+    expect(js).toBeGreaterThan((60 * 17576) / KEYS_PER_SECOND_PER_WORKER)
+    expect(js).toBeGreaterThan(one * 5)
     expect(one).toBeLessThan(3600)
     expect(eight).toBeLessThan(one / 6)
-    expect(estimateWork({ ...base, workers: 1 }, KEYS_PER_SECOND_PER_WORKER * 2).seconds).toBeLessThan(one)
+    expect(estimateWork({ ...base, workers: 1 }, WASM_KEYS_PER_SECOND_PER_WORKER * 2).seconds).toBeLessThan(one)
     expect(estimateWork({ ...base, ringSearch: 'none', workers: 1 }).seconds).toBeLessThan(one)
+    // 'all' repeats phase 1 through every left ring: same rotor orders, 26× the keys.
+    const all = estimateWork({ ...base, ringSearch: 'all', workers: 1 })
+    expect(all).toMatchObject({ orders: 60, keys: 26 * 60 * 17576 })
+    expect(all.seconds).toBeGreaterThan(one * 20)
     expect(estimateWork({ ...base, ciphertext: 'X'.repeat(600), workers: 1 }).seconds).toBeGreaterThan(one)
     const m4 = estimateWork({ ...defaultBreakerConfig('M4'), ciphertext: cipher, workers: 8 }).seconds
     expect(m4).toBeGreaterThan(eight * 100)
@@ -73,6 +80,8 @@ describe('validateBreakerConfig', () => {
   it('accepts a sensible config', () => {
     expect(validateBreakerConfig(ok)).toBeNull()
     expect(validateBreakerConfig({ ...ok, exactPlugs: true })).toBeNull()
+    expect(validateBreakerConfig({ ...ok, ringSearch: 'all' })).toBeNull()
+    expect(validateBreakerConfig({ ...ok, ringSearch: 'left' as unknown as 'all' })).toMatch(/ring search/)
     expect(validateBreakerConfig({ ...ok, exactPlugs: 'yes' as unknown as boolean })).toMatch(/exactPlugs/)
   })
 

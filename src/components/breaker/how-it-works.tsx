@@ -74,8 +74,8 @@ const SECTIONS: Section[] = [
           Step 1 is almost all of the work: millions of independent plugboard hill climbs, one per
           rotor order, start position and ring timing. That is exactly what a graphics card is
           built for, so when your browser offers WebGPU the climbs run as compute shaders on your
-          GPU — thousands at once, a team of 32 GPU threads per candidate trying 32 cable swaps at
-          a time.
+          GPU — thousands at once, one SIMD group of 32 GPU threads per candidate trying 32 cable
+          swaps at a time and agreeing on the next move with a single ballot instruction.
         </p>
         <ul className="list-disc pl-5 [&>li+li]:mt-2">
           <li>
@@ -87,6 +87,13 @@ const SECTIONS: Section[] = [
             <strong>GPU and CPU together.</strong> The GPU and the CPU workers take rotor orders
             from one queue. When the queue runs dry the GPU re-runs the orders the CPU is still on;
             whichever finishes first counts. The progress shows how many each one solved.
+          </li>
+          <li>
+            <strong>WebAssembly SIMD on the CPU.</strong> The CPU workers run the same search
+            compiled to WebAssembly. Instead of walking the message letter by letter, each worker
+            keeps a histogram of decrypted letters per ciphertext letter and plugboard choice, so a
+            cable swap is scored with a few 128-bit vector additions — about ten times faster than
+            the JavaScript version, which stays available as the reference.
           </li>
           <li>
             <strong>On your device only.</strong> Nothing is uploaded — the shader, the statistics

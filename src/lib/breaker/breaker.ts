@@ -10,7 +10,7 @@ import deWordsUrl from './data/words-de.txt?url'
 import enWordsUrl from './data/words-en.txt?url'
 import { MAX_SHOWN, mergeTop, rankFinal, toBreakerCandidate } from './pipeline'
 import type { WorkerRequest, WorkerResponse } from './protocol'
-import { DEFAULT_TUNING, rotorUnits, unitKeys } from './search'
+import { DEFAULT_TUNING, leftRingCount, rotorUnits, unitKeys } from './search'
 import type { CoreCandidate, RotorUnit, SearchTuning } from './search'
 import { estimatePhaseSeconds, validateBreakerConfig } from './config'
 import { toCodes } from './text'
@@ -407,7 +407,7 @@ export function createBreaker(options: BreakerOptions = {}): Breaker {
       r.shown = r.survivors.slice(0, MAX_SHOWN)
       const u = task.unit
       const split = r.gpuName ? ` — GPU ${r.unitsByGpu}, CPU ${r.unitsByCpu}` : ''
-      r.message = `Testing rotor orders: ${r.unitsDone} of ${r.units.length} done${split} (last ${u.greek ? `${u.greek} ` : ''}${u.left} ${u.middle} ${u.right}, ${u.reflector})`
+      r.message = `Testing rotor orders${u.ringL === undefined ? '' : ' × left rings'}: ${r.unitsDone} of ${r.units.length} done${split} (last ${u.greek ? `${u.greek} ` : ''}${u.left} ${u.middle} ${u.right}, ${u.reflector}${u.ringL === undefined ? '' : `, left ring ${String(u.ringL + 1).padStart(2, '0')}`})`
     } else if (task.kind === 'rings') {
       r.phaseDone += task.candidates.length
       r.ringed = mergeTop(r.ringed, candidates, r.tuning.finalists)
@@ -539,7 +539,9 @@ export function createBreaker(options: BreakerOptions = {}): Breaker {
       }
     }
     const tasks: Task[] = r.units.map((unit, index) => ({ kind: 'rotors', unit, index }))
-    r.message = `Testing ${r.units.length} rotor orders × ${MODELS[r.config.model].hasGreek ? '26 Greek positions × ' : ''}17,576 start positions`
+    const leftRings = leftRingCount(r.config.ringSearch)
+    const orders = r.units.length / leftRings
+    r.message = `Testing ${orders} rotor orders × ${leftRings > 1 ? `${leftRings} left rings × ` : ''}${MODELS[r.config.model].hasGreek ? '26 Greek positions × ' : ''}17,576 start positions`
     startPhase(r, 'rotors', tasks, r.rotorKeysTotal)
   }
 

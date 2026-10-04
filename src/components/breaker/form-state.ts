@@ -17,7 +17,7 @@ export const MIN_ROTORS = 3
 export const MAX_CABLES = 13
 
 const LANGUAGES: readonly BreakerLanguage[] = ['de', 'en']
-const RING_SEARCHES: readonly RingSearch[] = ['right-middle', 'right', 'none']
+const RING_SEARCHES: readonly RingSearch[] = ['right-middle', 'right', 'none', 'all']
 
 /** Dictionary-check typo tolerance (share of a word's letters that may be wrong); mirrors the engine's limits. */
 export const DEFAULT_TYPO_TOLERANCE = 0.2

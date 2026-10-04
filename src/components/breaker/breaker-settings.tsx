@@ -53,6 +53,12 @@ const RING_OPTIONS: SimpleSelectOption[] = [
     textValue: 'Assume AAA',
     description: 'Fastest; only if the rings are known to be 01 01 01',
   },
+  {
+    value: 'all',
+    label: 'Search all three rings',
+    textValue: 'Search all three rings',
+    description: '26× slower and finds the same keys: the left ring only shifts the left start position',
+  },
 ]
 
 const WIDE_MENU = 'w-[max(var(--radix-select-trigger-width),18rem)]'
@@ -263,7 +269,7 @@ export function BreakerSettings({
         <Field
           label="Ring settings:"
           htmlFor={`${id}-rings`}
-          info="Ring settings mostly just shift the start position; they matter only where a rotor carries its neighbour. The left ring never matters, so searching the right and middle rings finds the full key."
+          info="Ring settings mostly just shift the start position; they matter only where a rotor carries its neighbour. The left ring never matters, so searching the right and middle rings finds the full key. “Search all three rings” tries every left ring as well, to show this: 26× slower, the same keys (shown with the left ring at 01 and the left start letter shifted to match)."
         >
           <SimpleSelect
             id={`${id}-rings`}
@@ -417,7 +423,8 @@ export function BreakerSettings({
               <p>
                 With a graphics card the most expensive step — testing every rotor order and start
                 position — runs as WebGPU compute shaders on your GPU, while the CPU workers take a
-                share of the same work. On an Apple M3 Pro the GPU does about 14 CPU cores&apos; worth.
+                share of the same work. On an Apple M3 Pro the GPU alone tests about 21,000 start
+                positions a second — as much as 3 WebAssembly or 30 JavaScript CPU workers.
               </p>
               <p>
                 The GPU computes exactly the same candidates and scores as the CPU (bit-identical), so

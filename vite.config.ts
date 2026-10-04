@@ -40,7 +40,7 @@ function contentSecurityPolicy(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: './',
+  base: '/enigma-machine/',
   plugins: [react(), tailwindcss(), contentSecurityPolicy()],
   test: {
     environment: 'jsdom',

@@ -73,6 +73,9 @@ export function BreakerProgress({ snapshot, className }: BreakerProgressProps) {
         : `${progress.workers || snapshot.config?.workers || 0} CPU`,
     },
   ]
+  if (progress.cpuEngine) {
+    stats.push({ label: 'CPU engine', value: progress.cpuEngine === 'wasm' ? 'WebAssembly SIMD' : 'JavaScript' })
+  }
   // Proof of who did the work: rotor orders finished by each processor (each counted once).
   if (progress.gpu) {
     stats.push({ label: 'GPU', value: progress.gpu })

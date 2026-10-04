@@ -101,10 +101,14 @@ export function BreakerActions({
             {processors.gpu ? (
               <>
                 <span className="font-semibold text-fg">{processors.gpuName}</span> + {plural(processors.cpuWorkers, 'CPU worker')}
-                {cpuEstimate && <> (CPU only: about {formatDuration(cpuEstimate.seconds)})</>}
+                {processors.engine === 'wasm' && ' (WebAssembly SIMD)'}
+                {cpuEstimate && <> · CPU only: about {formatDuration(cpuEstimate.seconds)}</>}
               </>
             ) : (
-              plural(processors.cpuWorkers, 'worker')
+              <>
+                {plural(processors.cpuWorkers, 'worker')}
+                {processors.engine === 'wasm' && ' (WebAssembly SIMD)'}
+              </>
             )}
             {long && (
               <>

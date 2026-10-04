@@ -17,9 +17,9 @@ export function letters(text: string): string {
   }
 }
 
-export function safeEstimate(config: BreakerConfig): WorkEstimate | null {
+export function safeEstimate(config: BreakerConfig, keysPerSecondPerWorker?: number): WorkEstimate | null {
   try {
-    const estimate = estimateWork(config)
+    const estimate = estimateWork(config, keysPerSecondPerWorker)
     return Number.isFinite(estimate.keys) && Number.isFinite(estimate.seconds) ? estimate : null
   } catch {
     return null

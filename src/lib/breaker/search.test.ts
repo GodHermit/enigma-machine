@@ -91,6 +91,17 @@ describe('rotor units', () => {
     // Rotors / reflectors foreign to the model are ignored.
     expect(rotorUnits(config('', { rotors: ['I', 'II', 'VI'] as RotorId[] }))).toHaveLength(0)
   })
+
+  it("repeats every rotor order through each left ring for the 'all' ring search", () => {
+    expect(rotorUnits(config('')).every((u) => u.ringL === undefined)).toBe(true)
+    const units = rotorUnits(config('', { ringSearch: 'all' }))
+    expect(units).toHaveLength(60 * 26)
+    for (let ringL = 0; ringL < 26; ringL++) {
+      const pass = units.slice(ringL * 60, ringL * 60 + 60)
+      expect(pass.every((u) => u.ringL === ringL)).toBe(true)
+      expect(pass.map((u) => ({ ...u, ringL: undefined }))).toEqual(rotorUnits(config('')).map((u) => ({ ...u, ringL: undefined })))
+    }
+  })
 })
 
 describe('plugboard hill climbing', () => {
@@ -238,6 +249,27 @@ describe('phase 1: rotor order and start positions', () => {
     expect(survivors[0].key).toMatchObject({ posL: 7, posM: 19, posR: 3, ringM: 0, ringR: 0 })
     expect(survivors[0].ioc).toBeGreaterThan(0.065)
   })
+})
+
+describe("phase 1 through the left ring ('all' ring search)", () => {
+  it('finds the same normalised keys through every left ring', () => {
+    const s = keyed(37, {
+      left: { rotor: 'V', ring: 18, position: 24 },
+      middle: { rotor: 'III', ring: 0, position: 16 },
+      right: { rotor: 'IV', ring: 0, position: 1 },
+      plugboard: parsePlugboard('TO UH PM NY CA JB KS WX ZR VL').pairs,
+    })
+    const cipher = encryptText(s, GERMAN.slice(5000, 5300), { nonLetters: 'remove' }).output
+    const cfg = config(cipher, { ringSearch: 'all' })
+    const ctx = createContext(cfg, null)
+    const order = rotorUnits(cfg).filter((u) => u.left === 'V' && u.middle === 'III' && u.right === 'IV')
+    expect(order.map((u) => u.ringL)).toEqual(Array.from({ length: 26 }, (_, i) => i))
+    const atA = runRotorUnit(ctx, order[0], { keep: 10 })
+    const atS = runRotorUnit(ctx, order[18], { keep: 10 })
+    expect(atS).toEqual(atA)
+    // Left ring S (18), window Y (24) is wiring offset G (6): reported with the left ring at A.
+    expect(atA.survivors[0].key).toMatchObject({ posL: 6, posM: 16, posR: 1 })
+  }, 60_000)
 })
 
 describe('full pipeline (synchronous, no workers)', () => {

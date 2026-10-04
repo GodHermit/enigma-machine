@@ -37,7 +37,7 @@ import type { GreekRotorId, MachineSettings, ModelId, ReflectorId, RotorId } fro
 
 export type BreakerLanguage = 'de' | 'en'
 
-export type RingSearch = 'none' | 'right' | 'right-middle'
+export type RingSearch = 'none' | 'right' | 'right-middle' | 'all'
 
 export interface BreakerCrib {
   /** Known plaintext, letters only (e.g. "WETTERBERICHT"). */

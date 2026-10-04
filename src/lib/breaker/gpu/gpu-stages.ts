@@ -34,16 +34,13 @@ export const ON_THE_FLY = true
 /** On-the-fly mode: keep the right rotor's tables in workgroup memory. */
 export const ROTOR_SHARED = true
 
-/** Histogram rows for the subgroup climb ('auto': when the message and workgroup memory allow). */
-export const HISTOGRAM: 'auto' | 'on' | 'off' = 'auto'
-
 /** Which climb kernel to use: 'auto' picks subgroups when the GPU has fixed 32-lane subgroups. */
 export type ClimbKernel = 'auto' | 'subgroup' | 'workgroup'
 
 /** Keeps the selected climb block of the shader (//#SG-… or //#BARRIER-…) and drops the other. */
 export function shaderSource(
   template: string,
-  opts: { nmax: number; workgroupSize: number; onTheFly: boolean; rotorShared: boolean; subgroups: boolean; histogram?: boolean },
+  opts: { nmax: number; workgroupSize: number; onTheFly: boolean; rotorShared: boolean; subgroups: boolean },
 ): string {
   const drop = opts.subgroups ? 'BARRIER' : 'SG'
   const stripped = template.replace(new RegExp(`//#${drop}-BEGIN[\\s\\S]*?//#${drop}-END\\n`), '').replace(/\/\/#(SG|BARRIER)-(BEGIN|END)\n/g, '')
@@ -54,7 +51,6 @@ export function shaderSource(
     .replaceAll('__ONFLY__', String(opts.onTheFly))
     .replaceAll('__RSHARED__', String(opts.rotorShared))
     .replaceAll('__SG__', String(opts.subgroups))
-    .replaceAll('__HIST__', String(opts.histogram === true))
 }
 
 /** Workgroups per dispatch: keeps every submission short (GPU watchdogs, responsiveness). */
@@ -72,7 +68,7 @@ export interface GpuStages {
   /** Human description of the adapter, e.g. "apple metal-3". */
   adapter: string
   /** The climb kernel in use. */
-  kernel: 'subgroup+histogram' | 'subgroup' | 'workgroup'
+  kernel: 'subgroup' | 'workgroup'
   /** Resolves with a reason when the device is lost (driver reset, tab in background …). */
   lost: Promise<string>
   dispose(): void
@@ -102,7 +98,6 @@ export async function createGpuStages(
   onTheFly = ON_THE_FLY,
   rotorShared = ROTOR_SHARED,
   climbKernel: ClimbKernel = 'auto',
-  histogramMode: 'auto' | 'on' | 'off' = HISTOGRAM,
 ): Promise<GpuStages | null> {
   if (gpuUnsupportedReason(ctx)) return null
   const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' })
@@ -122,16 +117,6 @@ export async function createGpuStages(
     info0.subgroupMaxSize === 32
   if (climbKernel === 'subgroup' && !subgroupsOk) return null
   const subgroups = climbKernel !== 'workgroup' && subgroupsOk
-  // Histogram rows store counts as bytes: every cipher letter may occur at most 255 times.
-  const cs = ctx.layout.classStart
-  let maxClass = 0
-  for (let z = 0; z < 26; z++) maxClass = Math.max(maxClass, cs[z + 1] - cs[z])
-  const histogram =
-    histogramMode !== 'off' &&
-    subgroups &&
-    onTheFly &&
-    maxClass <= 255 &&
-    workgroupBytes(1) + nmax * 4 + 4732 * 4 + 1024 <= available
   const device = await adapter.requestDevice({
     requiredLimits: { maxComputeWorkgroupStorageSize: available },
     requiredFeatures: subgroups ? ['subgroups' as GPUFeatureName] : [],
@@ -139,7 +124,7 @@ export async function createGpuStages(
   const lost = device.lost.then((info) => info.message || info.reason || 'device lost')
 
   const module = device.createShaderModule({
-    code: shaderSource(shaderTemplate, { nmax, workgroupSize, onTheFly, rotorShared, subgroups, histogram }),
+    code: shaderSource(shaderTemplate, { nmax, workgroupSize, onTheFly, rotorShared, subgroups }),
   })
   const compile = await module.getCompilationInfo()
   const errors = compile.messages.filter((m) => m.type === 'error')
@@ -378,7 +363,7 @@ export async function createGpuStages(
     stages,
     screen: (plan, inner) => withLane((lane) => screenOn(lane, plan, inner)),
     adapter: [info?.vendor, info?.architecture || info?.description].filter(Boolean).join(' ') || 'GPU',
-    kernel: subgroups ? (histogram ? 'subgroup+histogram' : 'subgroup') : 'workgroup',
+    kernel: subgroups ? 'subgroup' : 'workgroup',
     lost,
     dispose() {
       for (const b of buffers) b.destroy()

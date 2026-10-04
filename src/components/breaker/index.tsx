@@ -11,9 +11,9 @@ import { CiphertextPanel } from './ciphertext-panel'
 import { defaultForm, formToConfig, hasIssues, validateForm, withModel } from './form-state'
 import { HowItWorks } from './how-it-works'
 import { SearchSpace } from './search-space'
-import { letters, safeEstimate } from './safe-engine'
+import { letters } from './safe-engine'
 import { useBreaker, usePersistentForm } from './use-breaker'
-import { processorEstimate, processorPlan } from './processors'
+import { cpuOnlyEstimate, processorEstimate, processorPlan } from './processors'
 import { useGpuInfo } from './use-gpu-info'
 
 /** The Codebreaker tab: ciphertext → search settings → run → ranked keys. */
@@ -30,7 +30,7 @@ export default function BreakerPage() {
   const gpu = useGpuInfo()
   const processors = useMemo(() => processorPlan(config, gpu), [config, gpu])
   const estimate = useMemo(() => processorEstimate(config, processors), [config, processors])
-  const cpuEstimate = useMemo(() => (processors.gpu ? safeEstimate(config) : null), [config, processors])
+  const cpuEstimate = useMemo(() => (processors.gpu ? cpuOnlyEstimate(config, processors) : null), [config, processors])
   const canStart = !hasIssues(issues)
   const blockedReason =
     issues.ciphertext ?? issues.rotors ?? issues.reflectors ?? issues.greekRotors ?? issues.crib ?? null

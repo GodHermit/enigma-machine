@@ -112,14 +112,19 @@ export function computeKeyspace(
 
   const total = factors.reduce((acc, f) => acc * f.count, 1n)
   const exhaustive = orders * reflectors * greek * POSITIONS
-  const ringTrials = config.ringSearch === 'right-middle' ? 676 : config.ringSearch === 'right' ? 26 : 1
+  const ringTrials =
+    config.ringSearch === 'right-middle' || config.ringSearch === 'all' ? 676 : config.ringSearch === 'right' ? 26 : 1
+  // 'all' repeats phase 1 through each left ring: 26× the work, the same distinct keys.
+  const allRings = config.ringSearch === 'all'
 
   const stages: SearchStage[] = [
     {
       id: 'rotors',
       label: 'Rotor order & positions',
-      keys: exhaustive,
-      detail: 'every combination, rings at AAA, no plugboard',
+      keys: allRings ? exhaustive * 26n : exhaustive,
+      detail: allRings
+        ? 'every combination through each of the 26 left rings (the same keys 26 times), no plugboard'
+        : 'every combination, rings at AAA, no plugboard',
     },
     {
       id: 'rings',

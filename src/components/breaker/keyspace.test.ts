@@ -50,6 +50,16 @@ describe('keyspace', () => {
     expect(k.stages[1].detail).toMatch(/^26 ring settings/)
   })
 
+  it("counts phase 1 once per left ring for the 'all' ring search, with the same distinct keys", () => {
+    const base = computeKeyspace(enigmaI)
+    const all = computeKeyspace({ ...enigmaI, ringSearch: 'all' })
+    expect(all.total).toBe(base.total)
+    expect(all.exhaustive).toBe(base.exhaustive)
+    expect(all.stages[0].keys).toBe(base.exhaustive * 26n)
+    expect(all.stages[0].detail).toMatch(/26 left rings/)
+    expect(all.stages[1].detail).toMatch(/^676 ring settings/)
+  })
+
   it('handles too few rotors and skipped phases', () => {
     const k = computeKeyspace({ ...enigmaI, rotors: ['I', 'II'], ringSearch: 'none', maxPlugs: 0 })
     expect(k.exhaustive).toBe(0n)

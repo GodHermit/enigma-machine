@@ -1,6 +1,6 @@
 import { MODELS } from '../enigma/constants'
 import type { ModelId } from '../enigma/types'
-import { DEFAULT_TUNING, cribPositions, rotorUnits, unitKeys } from './search'
+import { DEFAULT_TUNING, cribPositions, leftRingCount, rotorUnits, unitKeys } from './search'
 import type { SearchTuning } from './search'
 import { lettersOnly, toCodes } from './text'
 import { DEFAULT_TYPO_TOLERANCE, MAX_TYPO_TOLERANCE } from './words'
@@ -12,6 +12,11 @@ import type { BreakerConfig, RingSearch, WorkEstimate } from './types'
  * efficiency cores): 60 rotor orders in ≈ 135 s. A lone performance core in node does ≈ 1,100.
  */
 export const KEYS_PER_SECOND_PER_WORKER = 700
+/**
+ * The same for the WebAssembly SIMD engine (cpuEngine 'wasm'): 11 workers searched 180 rotor
+ * orders in ≈ 45 s in Chrome on the same machine (≈ 70,000 start positions/s in total).
+ */
+export const WASM_KEYS_PER_SECOND_PER_WORKER = 6400
 
 /** Phase-2 seconds per survivor and phase-3 seconds per finalist (same machine, ~300 letters). */
 const RING_SECONDS_PER_SURVIVOR = 0.0035
@@ -19,8 +24,8 @@ const PLUG_SECONDS_PER_FINALIST = 0.02
 /** Phase-4 seconds per checked candidate (dictionary check, polish included on average). */
 const WORDS_SECONDS_PER_CANDIDATE = 0.02
 
-/** Relative phase-1 cost of the ring-search options. */
-const RING_SEARCH_COST: Record<RingSearch, number> = { none: 0.3, right: 0.6, 'right-middle': 1 }
+/** Relative phase-1 cost per unit of the ring-search options ('all' has 26× the units instead). */
+const RING_SEARCH_COST: Record<RingSearch, number> = { none: 0.3, right: 0.6, 'right-middle': 1, all: 1 }
 
 /** Message length the throughput figures refer to; the cost grows about linearly with it. */
 const REFERENCE_LETTERS = 300
@@ -57,7 +62,7 @@ export function defaultBreakerConfig(model: ModelId = 'I'): BreakerConfig {
 export function estimatePhaseSeconds(
   config: BreakerConfig,
   tuning: SearchTuning = DEFAULT_TUNING,
-  keysPerSecondPerWorker: number = KEYS_PER_SECOND_PER_WORKER,
+  keysPerSecondPerWorker: number = config.cpuEngine === 'js' ? KEYS_PER_SECOND_PER_WORKER : WASM_KEYS_PER_SECOND_PER_WORKER,
 ): { rotors: number; rings: number; plugboard: number; words: number; keys: number; orders: number } {
   const units = rotorUnits(config)
   const keys = units.reduce((sum, u) => sum + unitKeys(u), 0)
@@ -73,7 +78,7 @@ export function estimatePhaseSeconds(
     plugboard: (Math.min(tuning.finalists, survivors * tuning.ringKeep) * PLUG_SECONDS_PER_FINALIST * scale) / workers,
     words: (Math.min(tuning.wordCandidates, survivors) * WORDS_SECONDS_PER_CANDIDATE * scale) / workers,
     keys,
-    orders: units.length,
+    orders: units.length / leftRingCount(config.ringSearch),
   }
 }
 
@@ -90,7 +95,7 @@ export function validateBreakerConfig(config: BreakerConfig): string | null {
   const letters = toCodes(config.ciphertext ?? '')
   if (letters.length < 10) return 'Enter at least 10 letters of ciphertext.'
   if (config.language !== 'de' && config.language !== 'en') return `Unknown language "${String(config.language)}".`
-  if (!['none', 'right', 'right-middle'].includes(config.ringSearch)) return `Unknown ring search "${String(config.ringSearch)}".`
+  if (!['none', 'right', 'right-middle', 'all'].includes(config.ringSearch)) return `Unknown ring search "${String(config.ringSearch)}".`
   if (!Number.isFinite(config.maxPlugs) || config.maxPlugs < 0 || config.maxPlugs > 13) {
     return 'The number of plugs must be between 0 and 13.'
   }

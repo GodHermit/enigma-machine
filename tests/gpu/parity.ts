@@ -72,7 +72,6 @@ async function main(): Promise<void> {
       params.get('onfly') !== '0',
       params.get('rshared') !== '0',
       (params.get('kernel') ?? 'auto') as 'auto' | 'subgroup' | 'workgroup',
-      (params.get('hist') ?? 'auto') as 'auto' | 'on' | 'off',
     )
     if (!gpu) throw new Error('WebGPU backend unavailable')
     adapter = `${gpu.adapter} (${gpu.kernel} climb)`

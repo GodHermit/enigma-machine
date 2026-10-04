@@ -286,9 +286,28 @@ export interface RotorUnit {
   left: RotorId
   middle: RotorId
   right: RotorId
+  /**
+   * Left ring ('all' ring search only). The unit tests every left start position through this
+   * ring; a left ring only shifts which start position lines up with which wiring offset, so
+   * every left ring finds the same (normalised) keys — the 'all' option exists to show that.
+   */
+  ringL?: number
 }
 
-/** Every reflector × [Greek wheel] × ordered triple of distinct rotors allowed by the config. */
+/** Ring searches that try every middle ring ('all' adds the left ring on top). */
+export function searchesMiddleRing(ringSearch: RingSearch): boolean {
+  return ringSearch === 'right-middle' || ringSearch === 'all'
+}
+
+/** Left rings searched per rotor order (26 for 'all', otherwise the left ring stays at A). */
+export function leftRingCount(ringSearch: RingSearch): number {
+  return ringSearch === 'all' ? 26 : 1
+}
+
+/**
+ * Every reflector × [Greek wheel] × ordered triple of distinct rotors allowed by the config
+ * (× 26 left rings for the 'all' ring search).
+ */
 export function rotorUnits(config: BreakerConfig): RotorUnit[] {
   const spec = MODELS[config.model]
   const rotors = unique(config.rotors).filter((r) => spec.rotorIds.includes(r))
@@ -297,14 +316,21 @@ export function rotorUnits(config: BreakerConfig): RotorUnit[] {
     ? unique(config.greekRotors).filter((g) => spec.greekIds.includes(g))
     : [null]
   const units: RotorUnit[] = []
-  for (const reflector of reflectors) {
-    for (const greek of greeks) {
-      for (const left of rotors) {
-        for (const middle of rotors) {
-          if (middle === left) continue
-          for (const right of rotors) {
-            if (right === left || right === middle) continue
-            units.push({ reflector, greek, left, middle, right })
+  // Left ring outermost: the first pass over all rotor orders is the regular right + middle
+  // search, every later pass repeats it through another left ring.
+  const leftRings = Array.from({ length: leftRingCount(config.ringSearch) }, (_, i) => i)
+  for (const ringL of leftRings) {
+    for (const reflector of reflectors) {
+      for (const greek of greeks) {
+        for (const left of rotors) {
+          for (const middle of rotors) {
+            if (middle === left) continue
+            for (const right of rotors) {
+              if (right === left || right === middle) continue
+              const unit: RotorUnit = { reflector, greek, left, middle, right }
+              if (config.ringSearch === 'all') unit.ringL = ringL
+              units.push(unit)
+            }
           }
         }
       }
@@ -472,7 +498,7 @@ export function planUnit(ctx: SearchContext, unit: RotorUnit): UnitPlan {
   const R = rotorTables(unit.right)
   const notchM = rotorTables(unit.middle).notch
   const searchRight = ctx.ringSearch !== 'none'
-  const searchMiddle = ctx.ringSearch === 'right-middle'
+  const searchMiddle = searchesMiddleRing(ctx.ringSearch)
 
   // Middle ring settings per middle offset: the one without a left turnover (screen) and a few
   // spread over the message (refine).
@@ -938,7 +964,7 @@ export function runRingSearch(
     const oL = mod(oL0 + dL)
     const oM = mod(oM0 + dM)
     const rms =
-      ringSearch === 'right-middle'
+      searchesMiddleRing(ringSearch)
         ? middleRingVariants(notchM, oM, n).map((v) => v.rm)
         : [ringSearch === 'none' ? base.ringM : 0]
     for (const rm of rms) {
@@ -1036,7 +1062,7 @@ function polishRings(
     ctx.ringSearch === 'right'
       ? [[0, 0], [0, 1], [0, -1]]
       : [[0, 0], [0, 1], [0, -1], [1, 1], [-1, -1]]
-  const middleRings = ctx.ringSearch === 'right-middle' ? Array.from({ length: 26 }, (_, i) => i) : [base.ringM]
+  const middleRings = searchesMiddleRing(ctx.ringSearch) ? Array.from({ length: 26 }, (_, i) => i) : [base.ringM]
   const rBase = new Int32Array(n)
   const iBase = new Int32Array(n)
   const tab = new Uint8Array(n * 26)

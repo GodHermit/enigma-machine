@@ -11,11 +11,6 @@ const WG: u32 = __WG__u;
 // SG: climbs run in one 32-lane subgroup with private state (see the SG climb); else the
 // workgroup-memory climb. The host keeps only the matching climb block (//#SG / //#BARRIER).
 const SG: bool = __SG__;
-// HIST (with SG and ONFLY): per candidate, a histogram row per (cipher letter z, plugboard-side
-// input x) holds the 26 output-letter counts as bytes (7 words, padded). A cable move's count
-// change is then a sum of row differences, independent of the message length.
-const HIST: bool = __HIST__;
-const HW: u32 = select(1u, 4732u, HIST);
 const NONE: u32 = 0xffffffffu;
 const NMAX: u32 = __NMAX__u;
 // ONFLY: class-table entries are computed from the rotor tables when needed instead of being
@@ -81,7 +76,6 @@ var<workgroup> tab: array<u32, TABW>;
 var<workgroup> sched: array<u32, NMAX>;
 var<workgroup> rfS: array<u32, RW>;
 var<workgroup> rbS: array<u32, RW>;
-var<workgroup> Hp: array<u32, HW>;
 var<workgroup> cs: array<u32, 27>;
 var<workgroup> P: array<u32, 26>;
 var<workgroup> startP: array<u32, 26>;
@@ -165,32 +159,6 @@ fn buildTab(lid: u32, pL: u32, oM: u32, oR: u32, rm: u32, r: u32) {
     }
   }
   workgroupBarrier();
-  if (HIST) {
-    // Each lane builds whole rows (no shared words between lanes, no atomics).
-    for (var row = lid; row < 676u; row += WG) {
-      let z = row / 26u;
-      let x = row % 26u;
-      let s = cs[z];
-      let cnt = cs[z + 1u] - s;
-      var counts: array<u32, 26>;
-      for (var j = 0u; j < cnt; j++) {
-        let y = scr(cipher[params.classPosOff + s + j], x);
-        counts[y] = counts[y] + 1u;
-      }
-      for (var w = 0u; w < 7u; w++) {
-        var packed = 0u;
-        for (var k = 0u; k < 4u; k++) {
-          let y = w * 4u + k;
-          if (y < 26u) {
-            packed |= counts[y] << (k * 8u);
-          }
-        }
-        Hp[row * 7u + w] = packed;
-      }
-    }
-    workgroupBarrier();
-    return;
-  }
   if (ONFLY) {
     return;
   }
@@ -250,36 +218,7 @@ fn initCounts(lid: u32) {
   workgroupBarrier();
 }
 
-// Adds histogram row (z, x) — the output counts of cipher letter z with plugboard input x.
-fn addRow(D: ptr<function, array<i32, 26>>, z: u32, x: u32) {
-  let r0 = (z * 26u + x) * 7u;
-  for (var w = 0u; w < 7u; w++) {
-    let r = Hp[r0 + w];
-    for (var k = 0u; k < 4u; k++) {
-      let y = w * 4u + k;
-      if (y < 26u) {
-        (*D)[y] = (*D)[y] + i32((r >> (k * 8u)) & 0xffu);
-      }
-    }
-  }
-}
-
 fn moveRow(D: ptr<function, array<i32, 26>>, z: u32, src: u32, dst: u32) {
-  if (HIST) {
-    let a0 = (z * 26u + src) * 7u;
-    let b0 = (z * 26u + dst) * 7u;
-    for (var w = 0u; w < 7u; w++) {
-      let a = Hp[a0 + w];
-      let b = Hp[b0 + w];
-      for (var k = 0u; k < 4u; k++) {
-        let y = w * 4u + k;
-        if (y < 26u) {
-          (*D)[y] = (*D)[y] + i32((b >> (k * 8u)) & 0xffu) - i32((a >> (k * 8u)) & 0xffu);
-        }
-      }
-    }
-    return;
-  }
   let s = cs[z];
   let cnt = cs[z + 1u] - s;
   if (cnt == 0u) {
@@ -471,31 +410,21 @@ fn climb(lid: u32, passes: u32, off: u32, count: u32) {
   for (var a = 0u; a < 26u; a++) {
     pv[a] = P[a];
   }
+  var mine: array<i32, 26>;
+  for (var z = 0u; z < 26u; z++) {
+    let s = cs[z];
+    let cnt = cs[z + 1u] - s;
+    let v = pv[z];
+    for (var j = lid; j < cnt; j += WG) {
+      let y = entry(s, cnt, v, j);
+      mine[y] = mine[y] + 1;
+    }
+  }
   var tv: array<i32, 26>;
   var sum = 0;
-  if (HIST) {
-    // T = Σ_z row(z, P[z]) — identical in every lane, no reduction needed.
-    for (var z = 0u; z < 26u; z++) {
-      addRow(&tv, z, pv[z]);
-    }
-    for (var v = 0u; v < 26u; v++) {
-      sum += tv[v] * tv[v];
-    }
-  } else {
-    var mine: array<i32, 26>;
-    for (var z = 0u; z < 26u; z++) {
-      let s = cs[z];
-      let cnt = cs[z + 1u] - s;
-      let v = pv[z];
-      for (var j = lid; j < cnt; j += WG) {
-        let y = entry(s, cnt, v, j);
-        mine[y] = mine[y] + 1;
-      }
-    }
-    for (var v = 0u; v < 26u; v++) {
-      tv[v] = subgroupAdd(mine[v]);
-      sum += tv[v] * tv[v];
-    }
+  for (var v = 0u; v < 26u; v++) {
+    tv[v] = subgroupAdd(mine[v]);
+    sum += tv[v] * tv[v];
   }
   var plugs = 0u;
   for (var a = 0u; a < 26u; a++) {

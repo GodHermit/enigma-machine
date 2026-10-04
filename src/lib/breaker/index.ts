@@ -12,6 +12,7 @@ export type { WordDictionary, WordsResult } from './words'
 export { createBreaker, loadDictionary } from './breaker'
 export {
   KEYS_PER_SECOND_PER_WORKER,
+  WASM_KEYS_PER_SECOND_PER_WORKER,
   defaultBreakerConfig,
   estimateWork,
   validateBreakerConfig,
