@@ -1,0 +1,38 @@
+{
+  "id": "./",
+  "name": "Enigma Machine",
+  "short_name": "Enigma",
+  "description": "Simulates the Enigma I, M3 and M4 cipher machines, visualises the signal path and breaks Enigma messages in the browser.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#212529",
+  "background_color": "#ffffff",
+  "categories": ["education", "utilities"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Simulator",
+      "short_name": "Simulator",
+      "description": "Set up an Enigma machine and watch each key press travel through it.",
+      "url": "./#/simulator",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Codebreaker",
+      "short_name": "Codebreaker",
+      "description": "Recover the key of an Enigma message from the ciphertext alone.",
+      "url": "./#/breaker",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}
