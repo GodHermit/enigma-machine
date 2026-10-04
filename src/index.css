@@ -1,0 +1,277 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens mirror the reference Turing Machine app
+ * (Bootstrap 5 greys, Nunito, black primary, 8px radius).
+ */
+:root {
+  --bg: #ffffff;
+  --fg: #212529;
+  --fg-emphasis: #000000;
+  --muted: #6c757d;
+  --border: #ced4da;
+  --border-strong: #adb5bd;
+  --surface: #f8f9fa; /* bs tertiary-bg, input-group-text */
+  --surface-2: #e9ecef; /* bs secondary-bg, active table cell */
+  --primary: #000000;
+  --primary-hover: #212529;
+  --primary-fg: #ffffff;
+  --link: #000000;
+  --focus-ring: rgba(0, 0, 0, 0.25);
+  --shadow-cell: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  --shadow-menu: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  /* Signal path: colour-blind safe orange / blue pair */
+  --signal-in: #e8590c;
+  --signal-out: #1c7ed6;
+  --lamp: #ffd43b;
+  --lamp-letter: #4a2a00; /* warm dark brown, stencilled letter over the lit bulb */
+  color-scheme: light;
+}
+
+@theme inline {
+  --font-sans: 'Nunito', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-fg-emphasis: var(--fg-emphasis);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-link: var(--link);
+  --color-signal-in: var(--signal-in);
+  --color-signal-out: var(--signal-out);
+  --color-lamp: var(--lamp);
+  --color-lamp-letter: var(--lamp-letter);
+
+  /* Reference uses Bootstrap --bs-border-width: 2px; bare `border*` utilities follow this. */
+  --default-border-width: 2px;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 8px;
+  --radius-lg: 0.5rem;
+
+  --shadow-cell: var(--shadow-cell);
+  --shadow-menu: var(--shadow-menu);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-bg font-sans text-fg antialiased;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  a {
+    color: var(--link);
+    text-decoration: underline;
+  }
+
+  ::selection {
+    background: var(--surface-2);
+  }
+
+  /*
+   * Lucide icons: 16px unless a `size-*` utility says otherwise, and a 1.5px line at any
+   * size (non-scaling stroke = screen pixels, not 24-unit viewBox units).
+   */
+  svg.lucide {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    stroke-width: 1.5px;
+  }
+
+  svg.lucide * {
+    vector-effect: non-scaling-stroke;
+  }
+
+  /*
+   * Hand cursor on everything clickable (Tailwind v4 preflight leaves buttons at `default`):
+   * native controls plus the ARIA widgets Radix renders (menu items, options, switches, tabs…).
+   * Utilities still win, e.g. `cursor-grab`, `cursor-ns-resize`, `cursor-help`.
+   */
+  :where(
+      button,
+      summary,
+      select,
+      input:is([type='checkbox'], [type='radio'], [type='range'], [type='file'], [type='color']),
+      [role='button'],
+      [role='checkbox'],
+      [role='combobox']:not(input),
+      [role='menuitem'],
+      [role='menuitemcheckbox'],
+      [role='menuitemradio'],
+      [role='option'],
+      [role='radio'],
+      [role='switch'],
+      [role='tab']
+    ) {
+    cursor: pointer;
+  }
+
+  :where(button, select, input, [role='button'], [role='switch'], [role='combobox']):disabled,
+  :where([role='button'], [role='option'], [role='tab'])[aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+}
+
+/*
+ * Lampboard bulb (src/components/lampboard.tsx). Static look only; motion animates the
+ * layers (switch-on flicker + spring, breathing halo, cooling fade-out). All layers sit
+ * under the letter (`.lamp` isolates, layers use z-index -1).
+ */
+@layer components {
+  .lamp {
+    isolation: isolate;
+  }
+
+  .lamp-layer {
+    position: absolute;
+    z-index: -1;
+    border-radius: 9999px;
+    pointer-events: none;
+  }
+
+  /*
+   * Light thrown at an angle: an elongated pool falling down and to the right across the
+   * panel (and the caps in it). Anchored on the lamp centre, rotated about it.
+   */
+  .lamp-pool {
+    left: 50%;
+    top: 50%;
+    width: 440%;
+    height: 230%;
+    translate: -40% -38%;
+    rotate: 32deg;
+    transform-origin: 40% 38%;
+    background: radial-gradient(
+      closest-side,
+      rgb(255 202 50 / 0.5),
+      rgb(255 188 30 / 0.24) 50%,
+      rgb(255 172 0 / 0.07) 78%,
+      transparent
+    );
+  }
+
+  /* Wide, soft bloom: the light filling the panel around the lamp. */
+  .lamp-bloom {
+    inset: -130%;
+    background: radial-gradient(
+      closest-side,
+      rgb(255 200 40 / 0.38),
+      rgb(255 184 20 / 0.18) 45%,
+      rgb(255 170 0 / 0.06) 75%,
+      transparent
+    );
+  }
+
+  /* Tight, intense halo hugging the bulb. */
+  .lamp-halo {
+    inset: -70%;
+    background: radial-gradient(
+      closest-side,
+      rgb(255 236 140 / 0.95),
+      rgb(255 214 60 / 0.75) 38%,
+      rgb(255 190 20 / 0.32) 66%,
+      transparent
+    );
+  }
+
+  /*
+   * The bulb, lit from an angle: white-hot spot up and to the left with a glassy specular
+   * highlight, deepening to amber towards the lower right, bright rim glow.
+   */
+  .lamp-bulb {
+    inset: -2px; /* over the 2px border */
+    background:
+      radial-gradient(ellipse 30% 20% at 36% 27%, rgb(255 255 255 / 0.95), transparent),
+      radial-gradient(
+        circle at 42% 36%,
+        #ffffff 0%,
+        #fffdf0 28%,
+        #fff0a8 48%,
+        #ffd84a 70%,
+        #f5a000 100%
+      );
+    box-shadow:
+      inset 1px 2px 3px rgb(255 255 255 / 0.95),
+      inset -2px -4px 8px rgb(220 120 0 / 0.4),
+      0 0 0 1.5px rgb(255 204 40),
+      0 0 14px 4px rgb(255 216 70),
+      0 0 36px 12px rgb(255 190 30 / 0.6);
+  }
+}
+
+/*
+ * Light a lit lamp throws on the caps around it (values set per lamp in lampboard.tsx):
+ * --lamp-light is the intensity (0..1), (--lamp-lx, --lamp-ly) the unit vector towards
+ * the light. Registered so they animate: rims and shadows swing round and cross-fade as
+ * the light moves to another lamp. Unlayered so it wins over the cell utilities.
+ */
+@property --lamp-light {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --lamp-lx {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --lamp-ly {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+.lamp {
+  transition:
+    --lamp-light 550ms cubic-bezier(0.3, 0, 0.2, 1),
+    --lamp-lx 350ms ease-out,
+    --lamp-ly 350ms ease-out,
+    border-color 500ms ease-out,
+    background-color 500ms ease-out,
+    color 500ms ease-out;
+}
+
+.lamp[data-lit] {
+  transition-duration: 75ms;
+}
+
+.lamp:not([data-lit]) {
+  border-color: color-mix(in srgb, #ffc21a calc(var(--lamp-light) * 65%), var(--border));
+  background-color: color-mix(in srgb, #fff7d9 calc(var(--lamp-light) * 75%), var(--bg));
+  color: color-mix(in srgb, #8a5200 calc(var(--lamp-light) * 55%), var(--fg));
+  box-shadow:
+    /* Warm rim on the side of the cap facing the light. */
+    inset calc(var(--lamp-lx) * -6px) calc(var(--lamp-ly) * -6px) 8px -4px
+      rgb(255 190 30 / calc(var(--lamp-light) * 0.95)),
+    /* Shadow cast on the panel away from the light (leaning down-right with the angled light). */
+    calc(var(--lamp-lx) * -7px + 1px) calc(var(--lamp-ly) * -7px + 2px) 8px -2px
+      rgb(60 38 0 / calc(var(--lamp-light) * 0.4));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lamp {
+    transition: none;
+  }
+}
+
+/* UI kit: focus ring colour token (used by src/components/ui). */
+@theme inline {
+  --color-focus-ring: var(--focus-ring);
+}
+
