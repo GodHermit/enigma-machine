@@ -2,23 +2,100 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Enigma Machine — Simulator and Codebreaker</title>
+    <meta
+      name="description"
+      content="Simulate the Enigma I, M3 and M4 cipher machines, see the signal path of every key press, and break Enigma messages from ciphertext alone, in your browser."
+    />
+    <meta name="keywords" content="Enigma machine, Enigma simulator, Enigma cipher, Enigma codebreaker, Enigma I, Enigma M3, Enigma M4, rotor cipher, plugboard, Bletchley Park, cryptanalysis, WebGPU" />
+    <meta name="author" content="Oleh Proidakov" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://olehproidakov.pp.ua/enigma-machine/" />
+
+    <!-- Icons and installable app -->
     <link rel="icon" href="./favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <link rel="manifest" href="./manifest.webmanifest" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="A web application that simulates the Enigma cipher machine and visualises the signal path." />
     <meta name="theme-color" content="#212529" />
+    <meta name="color-scheme" content="light" />
+    <meta name="application-name" content="Enigma Machine" />
+    <meta name="apple-mobile-web-app-title" content="Enigma" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Open Graph (Facebook, LinkedIn, Slack, Discord, Telegram, …) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Enigma Machine" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:url" content="https://olehproidakov.pp.ua/enigma-machine/" />
+    <meta property="og:title" content="Enigma Machine — Simulator and Codebreaker" />
+    <meta
+      property="og:description"
+      content="Simulate the Enigma I, M3 and M4, see the signal path of every key press, and break Enigma messages in your browser."
+    />
+    <meta property="og:image" content="https://olehproidakov.pp.ua/enigma-machine/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Enigma Machine: simulator and codebreaker for the Enigma I, M3 and M4." />
+
+    <!-- X / Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Enigma Machine — Simulator and Codebreaker" />
+    <meta
+      name="twitter:description"
+      content="Simulate the Enigma I, M3 and M4, see the signal path of every key press, and break Enigma messages in your browser."
+    />
+    <meta name="twitter:image" content="https://olehproidakov.pp.ua/enigma-machine/og-image.png" />
+    <meta name="twitter:image:alt" content="Enigma Machine: simulator and codebreaker for the Enigma I, M3 and M4." />
+
+    <!-- Structured data (schema.org) for search results -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Enigma Machine",
+        "alternateName": "Enigma Machine — Simulator and Codebreaker",
+        "url": "https://olehproidakov.pp.ua/enigma-machine/",
+        "description": "Simulates the Enigma I, M3 and M4 cipher machines, visualises the signal path of every key press and breaks Enigma messages from ciphertext alone, entirely in the browser.",
+        "image": "https://olehproidakov.pp.ua/enigma-machine/og-image.png",
+        "applicationCategory": "EducationalApplication",
+        "applicationSubCategory": "Cryptography",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript. WebGPU and WebAssembly SIMD are used when available.",
+        "inLanguage": "en",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "featureList": [
+          "Enigma I, M3 and M4 simulator",
+          "Signal path visualisation of every key press",
+          "Ciphertext-only codebreaker",
+          "GPU-accelerated search with WebGPU"
+        ],
+        "author": { "@type": "Person", "name": "Oleh Proidakov", "url": "https://olehproidakov.pp.ua" },
+        "sameAs": ["https://github.com/GodHermit/enigma-machine"]
+      }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..900;1,200..900&display=swap"
       rel="stylesheet"
     />
-    <title>Enigma Machine</title>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <h1>Enigma Machine — Simulator and Codebreaker</h1>
+      <p>
+        Simulate the Enigma I, M3 and M4 cipher machines, watch each key press travel through the plugboard, rotors and
+        reflector, and break Enigma messages from ciphertext alone. This app needs JavaScript; please enable it to use
+        the simulator and codebreaker.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
